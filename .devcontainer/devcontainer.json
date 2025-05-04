@@ -1,9 +1,9 @@
 {
-  "name": "Project Name",
+  "name": "Mnemonik Redis",
   "build": {
     "dockerfile": "Dockerfile"
   },
-  "workspaceFolder": "/workspaces/project-name",
+  "workspaceFolder": "/workspaces/mnemonik-redis",
   "shutdownAction": "none",
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {

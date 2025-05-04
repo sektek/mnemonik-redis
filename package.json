@@ -1,11 +1,11 @@
 {
-  "name": "@sektek/project-name",
+  "name": "@sektek/mnemonik-redis",
   "version": "1.0.0",
-  "description": "Description",
+  "description": "Redis adapter for Mnemonik",
   "author": "Edward Kelly <eddie@sektek.net>",
   "repository": {
     "type": "git",
-    "url": "git@github.com:sektek/project-name.git"
+    "url": "git@github.com:sektek/mnemonik-redis.git"
   },
   "license": "UNLICENSED",
   "private": true,

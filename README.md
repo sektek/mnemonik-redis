@@ -1,9 +1,9 @@
-# Project Name
+# Mnemonik Redis
 
-Description
+Redis adapter for Mnemonik
 
 ## Installation
 
 ```sh
-npm install @sektek/project-name
+npm install @sektek/mnemonik-redis
 ```
