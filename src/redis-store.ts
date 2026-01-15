@@ -1,5 +1,5 @@
-import { Redis, RedisKey } from 'ioredis';
-import { getComponent } from '@sektek/utility-belt';
+import { Redis, RedisKey, RedisValue } from 'ioredis';
+import { Store, getComponent } from '@sektek/utility-belt';
 
 import {
   DeserializerComponent,
@@ -8,44 +8,121 @@ import {
   SerializerFn,
 } from './types/index.js';
 
-type RedisStoreOptions<T, K = RedisKey> = {
+import { RedisKeyIterator } from './redis-key-iterator.js';
+import { RedisValueIterator } from './redis-value-iterator.js';
+
+/**
+ * Options for configuring the RedisStore.
+ * @param redis An instance of ioredis Redis client.
+ * @param prefix An optional prefix to prepend to all keys stored in Redis.
+ * @param keyDeserializer Optional deserializer for keys.
+ *  If not provided, keys will be treated as strings.
+ * @param keySerializer Optional serializer for keys.
+ *  If not provided, keys will be treated as strings.
+ * @param valueDeserializer Optional deserializer for values.
+ *  If not provided, JSON.parse will be used.
+ * @param valueSerializer Optional serializer for values.
+ *  If not provided, JSON.stringify will be used.
+ * @param keyIteratorBufferSize Optional buffer size for key iterator.
+ * @param valueIteratorBufferSize Optional buffer size for value iterator.
+ * @param iteratorBufferSize Optional buffer size for both key and value iterators.
+ *
+ * @param T The type of values stored.
+ * @param K The type of keys used. Defaults to string.
+ * @param KS The serialized type of keys in Redis. Defaults to string.
+ * @param VS The serialized type of values in Redis. Defaults to string.
+ */
+export type RedisStoreOptions<
+  T,
+  K = string,
+  KS extends RedisKey = string,
+  VS extends RedisValue = string,
+> = {
   redis: Redis;
   prefix?: string;
-  keyDeserializer?: DeserializerComponent<K, RedisKey>;
-  keySerializer?: SerializerComponent<K, RedisKey>;
-  valueDeserializer?: DeserializerComponent<T>;
-  valueSerializer?: SerializerComponent<T>;
+  keyDeserializer?: DeserializerComponent<K, KS>;
+  keySerializer?: SerializerComponent<K, KS>;
+  valueDeserializer?: DeserializerComponent<T, string>;
+  valueSerializer?: SerializerComponent<T, VS>;
+  keyIteratorBufferSize?: number;
+  valueIteratorBufferSize?: number;
+  iteratorBufferSize?: number;
 };
 
 // Simple passthrough functions that can work with any type
-function createPassthroughKeySerializer<K>(): SerializerFn<K, RedisKey> {
-  return (key: K): RedisKey => String(key) as RedisKey;
-}
+// function createPassthroughKeySerializer<K, KS extends RedisKey>(): SerializerFn<
+//   K,
+//   KS
+// > {
+//   return (key: K): KS => String(key) as KS;
+// }
 
-export class RedisStore<T, K = string> {
+/**
+ * A Redis-backed key-value store with customizable serialization.
+ * @param T The type of values stored.
+ * @param K The type of keys used. Defaults to string.
+ * @param KS The serialized type of keys in Redis. Defaults to string.
+ * @param VS The serialized type of values in Redis. Defaults to string.
+ */
+export class RedisStore<
+  T,
+  K = string,
+  KS extends RedisKey = string,
+  VS extends RedisValue = string,
+> implements Store<T, K>
+{
   #redis: Redis;
   #prefix: string;
-  #keySerializer: SerializerFn<K, RedisKey>;
-  #valueSerializer: SerializerFn<T>;
-  #valueDeserializer: DeserializerFn<T>;
+  #keyDeserializer: DeserializerFn<K, KS>;
+  #keySerializer: SerializerFn<K, KS>;
+  #valueSerializer: SerializerFn<T, VS>;
+  #valueDeserializer: DeserializerFn<T, string>;
+  #keyIteratorBufferSize: undefined | number;
+  #valueIteratorBufferSize: undefined | number;
 
-  constructor(opts: RedisStoreOptions<T, K>) {
+  constructor(opts: RedisStoreOptions<T, K, KS, VS>) {
     this.#redis = opts.redis;
     this.#prefix = opts.prefix || '';
+    this.#keyDeserializer = getComponent(opts.keyDeserializer, 'deserialize', {
+      default: (key: RedisKey) => key as K,
+    });
     this.#keySerializer = getComponent(opts.keySerializer, 'serialize', {
-      defaultProvider: createPassthroughKeySerializer<K>,
+      default: (key: K) => key as unknown as KS,
     });
 
     this.#valueSerializer = getComponent(opts.valueSerializer, 'serialize', {
-      default: JSON.stringify,
+      default: (value: T) => JSON.stringify(value) as VS,
     });
     this.#valueDeserializer = getComponent(
       opts.valueDeserializer,
       'deserialize',
       {
-        default: JSON.parse,
+        default: (value: string) => JSON.parse(value) as T,
       },
     );
+
+    this.#keyIteratorBufferSize =
+      opts.keyIteratorBufferSize ?? opts.iteratorBufferSize;
+    this.#valueIteratorBufferSize =
+      opts.valueIteratorBufferSize ?? opts.iteratorBufferSize;
+  }
+
+  keys(): AsyncIterable<K> {
+    return new RedisKeyIterator<K>({
+      redis: this.#redis,
+      prefix: this.#prefix,
+      keyDeserializer: this.#keyDeserializer,
+      bufferSize: this.#keyIteratorBufferSize,
+    });
+  }
+
+  values(): AsyncIterable<T> {
+    return new RedisValueIterator<T>({
+      redis: this.#redis,
+      prefix: this.#prefix,
+      valueDeserializer: this.#valueDeserializer,
+      bufferSize: this.#valueIteratorBufferSize,
+    });
   }
 
   async get(key: K): Promise<T | undefined> {
