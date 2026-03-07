@@ -5,16 +5,17 @@ import { DeserializerComponent, DeserializerFn } from './types/index.js';
 
 /**
  * Options for configuring the RedisValueIterator.
- * @param redis An instance of ioredis Redis client.
- * @param prefix The prefix to filter keys in Redis.
- * @param valueDeserializer Deserializer for values.
- *  If not provided, JSON.parse will be used.
- * @param bufferSize Optional buffer size for scanning keys.
+ *
+ * @template T The type of values being iterated over.
  */
 export type RedisValueIteratorOptions<T> = {
+  /** An instance of ioredis Redis client. */
   redis: Redis;
+  /** The prefix to filter keys in Redis. */
   prefix: string;
+  /** Deserializer for values. If not provided, JSON.parse will be used. */
   valueDeserializer: DeserializerComponent<T, RedisValue>;
+  /** Optional buffer size for scanning keys. */
   bufferSize?: number;
 };
 
@@ -22,7 +23,7 @@ export type RedisValueIteratorOptions<T> = {
  * An async iterator that iterates over values in Redis with a given prefix.
  * It uses SCAN to efficiently retrieve keys and MGET to fetch their values.
  *
- * @param T The type of values being iterated over.
+ * @template T The type of values being iterated over.
  */
 export class RedisValueIterator<T> {
   #redis: Redis;
