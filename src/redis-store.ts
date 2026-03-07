@@ -13,24 +13,11 @@ import { RedisValueIterator } from './redis-value-iterator.js';
 
 /**
  * Options for configuring the RedisStore.
- * @param redis An instance of ioredis Redis client.
- * @param prefix An optional prefix to prepend to all keys stored in Redis.
- * @param keyDeserializer Optional deserializer for keys.
- *  If not provided, keys will be treated as strings.
- * @param keySerializer Optional serializer for keys.
- *  If not provided, keys will be treated as strings.
- * @param valueDeserializer Optional deserializer for values.
- *  If not provided, JSON.parse will be used.
- * @param valueSerializer Optional serializer for values.
- *  If not provided, JSON.stringify will be used.
- * @param keyIteratorBufferSize Optional buffer size for key iterator.
- * @param valueIteratorBufferSize Optional buffer size for value iterator.
- * @param iteratorBufferSize Optional buffer size for both key and value iterators.
  *
- * @param T The type of values stored.
- * @param K The type of keys used. Defaults to string.
- * @param KS The serialized type of keys in Redis. Defaults to string.
- * @param VS The serialized type of values in Redis. Defaults to string.
+ * @template T The type of values stored.
+ * @template K The type of keys used. Defaults to string.
+ * @template KS The serialized type of keys in Redis. Defaults to string.
+ * @template VS The serialized type of values in Redis. Defaults to string.
  */
 export type RedisStoreOptions<
   T,
@@ -38,14 +25,43 @@ export type RedisStoreOptions<
   KS extends RedisKey = string,
   VS extends RedisValue = string,
 > = {
+  /** An instance of ioredis Redis client. */
   redis: Redis;
+
+  /** An optional prefix to prepend to all keys stored in Redis. */
   prefix?: string;
+
+  /**
+   * Optional deserializer for keys. If not provided, keys will be treated
+   * as strings.
+   */
   keyDeserializer?: DeserializerComponent<K, KS>;
+
+  /**
+   * Optional serializer for keys. If not provided, keys will be treated
+   * as strings.
+   */
   keySerializer?: SerializerComponent<K, KS>;
+
+  /**
+   * Optional deserializer for values. If not provided,
+   * JSON.parse will be used.
+   */
   valueDeserializer?: DeserializerComponent<T, string>;
+
+  /**
+   * Optional serializer for values. If not provided,
+   * JSON.stringify will be used.
+   */
   valueSerializer?: SerializerComponent<T, VS>;
+
+  /** Optional buffer size for key iterator. */
   keyIteratorBufferSize?: number;
+
+  /** Optional buffer size for value iterator. */
   valueIteratorBufferSize?: number;
+
+  /** Optional buffer size for both key and value iterators. */
   iteratorBufferSize?: number;
 };
 
@@ -59,18 +75,18 @@ export type RedisStoreOptions<
 
 /**
  * A Redis-backed key-value store with customizable serialization.
- * @param T The type of values stored.
- * @param K The type of keys used. Defaults to string.
- * @param KS The serialized type of keys in Redis. Defaults to string.
- * @param VS The serialized type of values in Redis. Defaults to string.
+ *
+ * @template T The type of values stored.
+ * @template K The type of keys used. Defaults to string.
+ * @template KS The serialized type of keys in Redis. Defaults to string.
+ * @template VS The serialized type of values in Redis. Defaults to string.
  */
 export class RedisStore<
   T,
   K = string,
   KS extends RedisKey = string,
   VS extends RedisValue = string,
-> implements Store<T, K>
-{
+> implements Store<T, K> {
   #redis: Redis;
   #prefix: string;
   #keyDeserializer: DeserializerFn<K, KS>;
