@@ -22,6 +22,10 @@ describe('RedisStore', function () {
     prefix = `test:${randomUUID()}:`;
   });
 
+  after(async function () {
+    await redis.quit();
+  });
+
   beforeEach(function () {
     store = new RedisStore<string, string>({ redis, prefix });
   });

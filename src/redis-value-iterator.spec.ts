@@ -19,6 +19,10 @@ describe('RedisValueIterator', function () {
     prefix = `test:${randomUUID()}:`;
   });
 
+  after(async function () {
+    await redis.quit();
+  });
+
   afterEach(async function () {
     if (keysToCleanup.length > 0) {
       await redis.del(...keysToCleanup);
