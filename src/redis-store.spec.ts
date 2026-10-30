@@ -129,4 +129,47 @@ describe('RedisStore', function () {
     const value = await customStore.get({ id: 7 });
     expect(value).to.equal('lucky');
   });
+
+  it('should yield keys from keys() without the prefix', async function () {
+    await store.set('a', 'value-a');
+    await store.set('b', 'value-b');
+
+    const keys: string[] = [];
+    for await (const key of store.keys()) {
+      keys.push(key);
+    }
+
+    expect(keys).to.have.members(['a', 'b']);
+  });
+
+  it('should round-trip keys from keys() through get()', async function () {
+    await store.set('a', 'value-a');
+    await store.set('b', 'value-b');
+
+    const values: Array<string | undefined> = [];
+    for await (const key of store.keys()) {
+      values.push(await store.get(key));
+    }
+
+    expect(values).to.have.members(['value-a', 'value-b']);
+  });
+
+  it('should round-trip custom serialized keys from keys()', async function () {
+    const customStore = new RedisStore<string, { id: number }>({
+      redis,
+      prefix: `${prefix}custom:`,
+      keySerializer: (key: { id: number }) => String(key.id),
+      keyDeserializer: (key: string) => ({ id: Number(key) }),
+    });
+    await customStore.set({ id: 7 }, 'lucky');
+
+    const values: Array<string | undefined> = [];
+    for await (const key of customStore.keys()) {
+      expect(key).to.deep.equal({ id: 7 });
+      values.push(await customStore.get(key));
+    }
+
+    expect(values).to.deep.equal(['lucky']);
+    await customStore.clear();
+  });
 });
