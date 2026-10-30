@@ -170,6 +170,5 @@ describe('RedisStore', function () {
     }
 
     expect(values).to.deep.equal(['lucky']);
-    await customStore.clear();
   });
 });
