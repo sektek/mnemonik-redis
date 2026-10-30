@@ -72,6 +72,7 @@ Async iterator over all keys in the store. Uses Redis `SCAN` in batches.
 
 **Behaviour:**
 - Scans with pattern `${prefix}*` (or `*` if no prefix)
+- Strips the leading prefix from each scanned key before deserializing, so `keyDeserializer` receives the same form `keySerializer` produces and yielded keys can be passed back to `get`/`has`/`delete`
 - Deserializes all keys in each batch concurrently via `Promise.all`
 - Yields one key at a time; refills buffer automatically when exhausted
 
