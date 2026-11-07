@@ -78,7 +78,6 @@ for await (const key of users.keys()) {
 
 Things to be aware of:
 
-- **Keys include the prefix.** `keys()` yields the key as it is stored in Redis, prefix included (`'users:u1'`, not `'u1'`). Passing it straight back to `get()` would prefix it a second time, so strip the prefix yourself or use a `keyDeserializer` that does.
 - **Each iterable can be consumed once.** The iterator holds its own cursor; call `keys()` or `values()` again to start another pass.
 - **`SCAN` guarantees are weak.** A key can occasionally be returned more than once, and keys added or removed during the iteration may or may not appear.
 - `values()` skips keys that disappear between the `SCAN` and the `MGET`.
@@ -110,7 +109,7 @@ const orders = new RedisStore<Order, OrderId>({
   prefix: 'orders:',
   keySerializer: key => `${key.tenant}/${key.id}`,
   keyDeserializer: text => {
-    const [tenant, id] = String(text).replace('orders:', '').split('/');
+    const [tenant, id] = String(text).split('/');
     return { tenant, id: Number(id) };
   },
 });

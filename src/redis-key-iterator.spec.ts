@@ -42,9 +42,7 @@ describe('RedisKeyIterator', function () {
     const iterator = new RedisKeyIterator<string>({
       redis,
       prefix,
-      keyDeserializer: {
-        deserialize: async (key: string) => key.replace(prefix, ''),
-      },
+      keyDeserializer: async (key: string) => key,
       bufferSize: 2,
     });
 
@@ -60,10 +58,7 @@ describe('RedisKeyIterator', function () {
     const iterator = new RedisKeyIterator<string>({
       redis,
       prefix: `${prefix}nonexistent:`,
-      keyDeserializer: {
-        deserialize: async (key: string) =>
-          key.replace(`${prefix}nonexistent:`, ''),
-      },
+      keyDeserializer: async (key: string) => key,
     });
 
     const retrievedKeys: string[] = [];
@@ -97,8 +92,8 @@ describe('RedisKeyIterator', function () {
 
     expect(retrievedKeys).to.have.lengthOf(1);
     expect(retrievedKeys[0]).to.deep.equal({
-      original: rawKey,
-      upper: rawKey.toUpperCase(),
+      original: 'customKey',
+      upper: 'CUSTOMKEY',
     });
   });
 });

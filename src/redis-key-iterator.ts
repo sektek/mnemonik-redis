@@ -44,7 +44,9 @@ export class RedisKeyIterator<K = RedisKey> {
         this.#cursor = newCursor;
         this.#isComplete = this.#cursor === '0';
         this.#buffer.push(
-          ...(await Promise.all(keys.map(key => this.#keyDeserializer(key)))),
+          ...(await Promise.all(
+            keys.map(key => this.#keyDeserializer(this.#stripPrefix(key))),
+          )),
         );
       }
 
@@ -52,5 +54,9 @@ export class RedisKeyIterator<K = RedisKey> {
         yield this.#buffer.shift() as K;
       }
     }
+  }
+
+  #stripPrefix(key: string): string {
+    return key.startsWith(this.#prefix) ? key.slice(this.#prefix.length) : key;
   }
 }
